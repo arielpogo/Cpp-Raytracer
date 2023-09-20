@@ -28,7 +28,7 @@ public:
 		initialize();
 
 		//P3 image format
-		std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
+		output_file << "P3\n" << image_width << ' ' << image_height << "\n255\n";
 
 		for(int j = 0; j < image_height; j++){
 			std::clog << "\rProgress: " << (j*100)/image_height << "% " << std::flush;
@@ -39,7 +39,7 @@ public:
 					ray r = get_ray(i,j);
 					pixel_color += ray_color(r, max_bounces, world);
 				}
-				write_color(std::cout, pixel_color, samples_per_pixel);
+				write_color(output_file, pixel_color, samples_per_pixel);
 			}
 		}
 
@@ -90,11 +90,11 @@ private:
 
 		if(debug){
 			std::clog << "image w: " << image_width << '\n'
-				  << "image h:" << image_height << '\n'
+					  << "image h: " << image_height << '\n'
 			          << "viewport w: " << viewport_width << '\n'
-				  << "viewport h: " << viewport_height << '\n'
-				  << "focal length: " << focal_length << '\n'
-				  << std::endl;
+				      << "viewport h: " << viewport_height << '\n'
+					  << "focal length: " << focal_length << '\n'
+				      << std::endl;
 		}
 	}
 
@@ -127,7 +127,7 @@ private:
 		//vec3 unit_direction = unit_vector(r.direction());
 		//auto a = 0.5*(unit_direction.y() + 1.0);
 		//return (1.0-a) * color (1,1,1) + a*color(0.5,0.5,0.9);
-		return color(1.0,1.0,1.0);
+		return color(0.5,0,0);
 	}
 };
 
