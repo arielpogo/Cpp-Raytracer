@@ -69,7 +69,7 @@ int main(int argc, char* argv[]){
 
 	hittable_list world;
 
-	auto material_ground = make_shared<lambertian>(color(0.0,148.0/255.0,132.0/255.0));
+	auto material_ground = make_shared<lambertian>(color(0.5,0.5,0.5));
 	auto material_center = make_shared<lambertian>(color(0.8, 1, 0));
 	auto material_right  = make_shared<metal>(color(1.0, 216.0/255.0, 0.0));
 
