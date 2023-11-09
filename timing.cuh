@@ -1,5 +1,7 @@
 //Code written by Dr. Yicheng Tu
 
+#include <iostream>
+
 cudaEvent_t TIMING_START_EVENT, TIMING_STOP_EVENT;
 float TIMING_ELAPSED_TIME;
 

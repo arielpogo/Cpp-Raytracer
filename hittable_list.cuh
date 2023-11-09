@@ -1,7 +1,7 @@
-#ifndef HITTABLE_LIST_H
-#define HITTABLE_LIST_H
+#ifndef HITTABLE_LIST_CUH
+#define HITTABLE_LIST_CUH
 
-#include "hittable.h"
+#include "hittable.cuh"
 
 #include <memory>
 #include <vector>
@@ -14,16 +14,16 @@ public:
 	//shared_ptr safely deletes itself once it goes out of scope
 	std::vector<shared_ptr<hittable>> objects;
 
-	hittable_list(){}
-	hittable_list(shared_ptr<hittable> object) {add(object);}
+	__device__ __host__ hittable_list(){}
+	__device__ __host__ hittable_list(shared_ptr<hittable> object) {add(object);}
 
-	void clear() {objects.clear();}
+	__device__ __host__ void clear() {objects.clear();}
 
-	void add(shared_ptr<hittable> object) {
+	__device__ __host__ void add(shared_ptr<hittable> object) {
 		objects.push_back(object);
 	}
 
-	bool hit(const ray& r, interval ray_t, hit_record& rec) const override {
+	__device__ bool hit(const ray& r, interval ray_t, hit_record& rec) const override {
 		hit_record temp_rec;
 		bool hit_anything = false;
 		double closest_yet = ray_t.max;

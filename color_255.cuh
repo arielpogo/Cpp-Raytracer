@@ -1,19 +1,19 @@
 #pragma once
-#include "color.h"
+#include "color.cuh"
 
 class color_255 {
 public:
 	char e[3];
 
-	color_255() : e{0,0,0} {
+	__host__ __device__ color_255() : e{0,0,0} {
 
 	}
 
-	color_255(char r, char g, char b) : e{r, g, b} {
+	__host__ __device__ color_255(char r, char g, char b) : e{r, g, b} {
 
 	}
 
-	color_255(color& c, int samples) {
+	__host__ __device__ color_255(color& c, int samples) {
 		double r = c.x();
 		double g = c.y();
 		double b = c.z();
@@ -34,7 +34,7 @@ public:
 		e[2] = static_cast<char>(256 * intensity.clamp(b));
 	}
 
-	char x() const { return e[0]; }
-	char y() const { return e[1]; }
-	char z() const { return e[2]; }
+	__host__ __device__ char x() const { return e[0]; }
+	__host__ __device__ char y() const { return e[1]; }
+	__host__ __device__ char z() const { return e[2]; }
 };

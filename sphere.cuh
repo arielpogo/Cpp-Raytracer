@@ -1,8 +1,8 @@
-#ifndef SPHERE_H
-#define SPHERE_H
+#ifndef SPHERE_CUH
+#define SPHERE_CUH
 
-#include "hittable.h"
-#include "vec3.h"
+#include "hittable.cuh"
+#include "vec3.cuh"
 
 /*EXPLANATION:
 equation of a sphere: (x - cx)^2 + (y - cy)^2 + (z - cz)^2 = r^2
@@ -39,9 +39,9 @@ this returns the t along the hit_record (see hittable.h)
 
 class sphere : public hittable {
 public:
-	sphere(point3 _center, double _radius, shared_ptr<material> _material) : center(_center), radius(_radius), mat(_material) {}
+	__device__ sphere(point3 _center, double _radius, shared_ptr<material> _material) : center(_center), radius(_radius), mat(_material) {}
 
-	bool hit(const ray&r, interval ray_t, hit_record& rec) const override{
+	__device__ bool hit(const ray&r, interval ray_t, hit_record& rec) const override{
 		vec3 oc = r.origin() - center; //A-C
 		double a = r.direction().length_squared(); //B.B
 		double half_b = dot(oc, r.direction());

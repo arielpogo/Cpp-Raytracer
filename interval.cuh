@@ -1,24 +1,24 @@
-#ifndef INTERVAL_H
-#define INTERVAL_H
+#ifndef INTERVAL_CUH
+#define INTERVAL_CUH
 
 class interval{
 public:
 	double min, max;
 
-	interval() : min(+infinity), max(-infinity) {} //empty on default
-	interval(double _min, double _max) : min(_min), max(_max) {}
+	__host__ __device__ interval() : min(+infinity), max(-infinity) {} //empty on default
+	__host__ __device__ interval(double _min, double _max) : min(_min), max(_max) {}
 
 	//whether x is in range
-	bool contains(double x) const {
+	__host__ __device__ bool contains(double x) const {
 		return min <= x && x <= max;
 	}
 	
 	//whether x is in range, exclusive
-	bool surrounds(double x) const {
+	__host__ __device__ bool surrounds(double x) const {
 		return min < x && x < max;
 	}
 
-	double clamp(double x) const{
+	__host__ __device__ double clamp(double x) const{
 		if(x < min) return min;
 		else if (x > max) return max;
 		else return x;

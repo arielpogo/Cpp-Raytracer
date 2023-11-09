@@ -7,6 +7,11 @@
 #include <cstdlib>
 #include <fstream>
 
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
+#include "timing.cuh"
+
 using std::shared_ptr;
 using std::make_shared;
 using std::sqrt;
@@ -28,8 +33,8 @@ inline double random_double(double min, double max){
 	return min + (max-min)*random_double();
 }
 
-#include "ray.h"
-#include "vec3.h"
-#include "interval.h"
+#include "ray.cuh"
+#include "vec3.cuh"
+#include "interval.cuh"
 
 #endif

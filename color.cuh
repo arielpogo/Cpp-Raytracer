@@ -1,7 +1,7 @@
-#ifndef COLOR_H
-#define COLOR_H
+#ifndef COLOR_CUH
+#define COLOR_CUH
 
-#include "vec3.h"
+#include "vec3.cuh"
 
 #include <iostream>
 
@@ -12,9 +12,9 @@ using color = vec3;
 //a simple and common one is gamma 2, where gamma space to linear you power by 2
 //the inverse of powering by 2 is sqrt, thus linear to gamma:
 //(the colors are a double from 0-1 so sqrt actually increases it)
-inline double linear_to_gamma(double l){ return sqrt(l); }
+__device__ inline double linear_to_gamma(double l){ return sqrt(l); }
 
-void write_color(std::ostream &out, color pixel_color, int samples_per_pixel) {
+__device__ void write_color(std::ostream &out, color pixel_color, int samples_per_pixel) {
 	
 	double r = pixel_color.x();
 	double g = pixel_color.y();

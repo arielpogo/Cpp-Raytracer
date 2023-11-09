@@ -1,15 +1,10 @@
 #include "raytracing.h"
 
-#include "camera.h"
-#include "color.h"
-#include "hittable_list.h"
-#include "material.h"
-#include "sphere.h"
-
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
-#include "timing.cuh"
+#include "camera.cuh"
+#include "color.cuh"
+#include "hittable_list.cuh"
+#include "material.cuh"
+#include "sphere.cuh"
 
 int main(int argc, char* argv[]){
 	int height_parameter = 0;
