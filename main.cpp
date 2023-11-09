@@ -6,9 +6,17 @@
 #include "material.h"
 #include "sphere.h"
 
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
+#include "timing.cuh"
+
 int main(int argc, char* argv[]){
 	int height_parameter = 0;
 	int ratio_parameter = 0;
+	std::string filename = "image";
+	int block_size_parameter = 32; //default
+
 	//Handle command line arguments
 	if(argc > 1){ //if any arguments (beyond executable name)
 		for(int i = 1; i < argc; i++){
@@ -26,6 +34,11 @@ int main(int argc, char* argv[]){
 						debug = true;
 						std::clog << "Debug enabled." << std::endl;
 					break;
+
+					case 'b': //block size
+						i++; //go to parameter
+
+						break;
 
 					case 'o': //set output file name
 						i++; //go to the parameter
@@ -61,12 +74,6 @@ int main(int argc, char* argv[]){
 		}
 	}
 
-	output_file.open(filename + ".ppm");
-	if (!output_file.is_open()) {
-		std::cerr << "Error: " << filename << ".ppm" << " could not be opened/created." << std::endl;
-		return 1;
-	}
-
 	hittable_list world;
 
 	auto material_ground = make_shared<lambertian>(color(0.5,0.5,0.5));
@@ -92,10 +99,13 @@ int main(int argc, char* argv[]){
 
     cam.lookfrom = point3(0,2,-5);
     cam.lookat   = point3(0,0,0);
-	
-	cam.render(world);	
 
-	output_file.close();
+	TIMING_START();
 
-	return 0;
+	int render_result = cam.render(world, filename, block_size_parameter);
+
+	TIMING_STOP();
+	TIMING_PRINT();
+
+	return render_result;
 }

@@ -4,11 +4,16 @@
 #include "raytracing.h"
 
 #include "color.h"
+#include "color_255.h"
 #include "hittable.h"
 #include "material.h"
 
 #include <iostream>
 
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
+#include "timing.cuh"
 
 class camera{
 public:
@@ -24,26 +29,60 @@ public:
 	point3 lookat = point3(0,0,0);
 	vec3 relative_up = vec3(0,1,0);
 	
-	void render(const hittable& world){
+	__host__ int render(const hittable_list& world, std::string filename, int block_size_parameter) {
 		initialize();
+
+		int num_pixels = image_height * image_width;
+
+		std::ofstream output_file;
+
+		output_file.open(filename + ".ppm");
+		if (!output_file.is_open()) {
+			std::cerr << "Fatal error: " << filename << ".ppm" << " could not be opened/created." << std::endl;
+			return 1;
+		}
+
+		color_255* h_result = (color_255*) malloc(num_pixels * sizeof(color_255));
+
+		if (h_result == NULL) {
+			std::cerr << "Fatal error: " << num_pixels * sizeof(color_255) << " bytes of memory could not be allocated in host memory (RAM)." << std::endl;
+
+			free(h_result);
+			output_file.close();
+			return 1;
+		}
+
+		color_255* d_result = nullptr;
+
+		int num_blocks = std::ceil(num_pixels / (double) block_size_parameter);
+		int shm_size = 1024 * 48; //48KB
+
+		render_kernel <<<num_blocks, block_size_parameter>>> (world);
 
 		//P3 image format
 		output_file << "P3\n" << image_width << ' ' << image_height << "\n255\n";
 
-		for(int j = 0; j < image_height; j++){
-			std::clog << "\rProgress: " << (j*100)/image_height << "% " << std::flush;
-			
-			for(int i = 0; i < image_width; i++){
-				color pixel_color(0,0,0);
-				for(int sample = 0; sample < samples_per_pixel; sample++){
-					ray r = get_ray(i,j);
-					pixel_color += ray_color(r, max_bounces, world);
-				}
-				write_color(output_file, pixel_color, samples_per_pixel);
+		for (int j = 0; j < image_height; j++) {
+			for (int i = 0; i < image_width; i++) {
+				int pixel = j * image_width + i;
+				output_file << h_result[pixel].x() << ' ' << h_result[pixel].y() << ' ' << h_result[pixel].z() << '\n';
 			}
 		}
 
 		std::clog << "\rDone.                                 \n";
+
+		output_file.close();
+		free(h_result);
+	}
+
+	__global__ void render_kernel(const hittable& world){
+		extern __shared__ color_255 sh_result;
+
+		color pixel_color(0,0,0);
+		for(int sample = 0; sample < samples_per_pixel; sample++){
+			ray r = get_ray(i,j);
+			pixel_color += ray_color(r, max_bounces, world);
+		}
 	}
 
 private:
@@ -54,7 +93,7 @@ private:
 	vec3 pixel_delta_v;
 	vec3 u, v, w; //camera vectors
 	
-	void initialize(){
+	__device__ void initialize(){
 		//calculate width based on aspect ratio and height, for user convenience
 		image_width = static_cast<int>(aspect_ratio * image_height);
 		image_width = (image_width < 1) ? 1 : image_width; //no 0px width image
