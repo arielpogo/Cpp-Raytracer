@@ -7,7 +7,7 @@ class hit_record; //prevent circular reference once hittable references material
 
 class material{
 public:
-	__device__ virtual ~material() = default;
+	virtual ~material() = default;
 
 	__device__ virtual bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) const = 0;
 };

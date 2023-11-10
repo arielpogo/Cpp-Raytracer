@@ -11,6 +11,13 @@
 
 #include <iostream>
 
+class camera;
+
+__global__ void render_kernel(const hittable& world, color_255* d_result, camera& cam);
+__device__ color ray_color(const ray& r, int depth, const hittable& world);
+__device__ ray get_ray(int i, int j, camera& cam);
+__device__ vec3 pixel_sample_square(camera& cam);
+
 class camera{
 public:
 	//image
@@ -25,57 +32,6 @@ public:
 	point3 lookat = point3(0,0,0);
 	vec3 relative_up = vec3(0,1,0);
 	
-	__host__ int render(const hittable_list& world, std::string filename, int block_size_parameter) {
-		initialize();
-
-		const int num_pixels = image_height * image_width;
-
-		std::ofstream output_file;
-
-		output_file.open(filename + ".ppm");
-		if (!output_file.is_open()) {
-			std::cerr << "Fatal error: " << filename << ".ppm" << " could not be opened/created." << std::endl;
-			return 1;
-		}
-
-		color_255* h_result = (color_255*) malloc(num_pixels * sizeof(color_255));
-
-		if (h_result == NULL) {
-			std::cerr << "Fatal error: " << num_pixels * sizeof(color_255) << " bytes of memory could not be allocated in host memory (RAM)." << std::endl;
-
-			free(h_result);
-			output_file.close();
-			return 1;
-		}
-
-		color_255* d_result = nullptr;
-		cudaMalloc((void**)&d_result, num_pixels * sizeof(color_255));
-
-		int num_blocks = (int) std::ceil(num_pixels / (double) block_size_parameter);
-		//int shm_size = 1024 * 48; //48KB
-
-		render_kernel << <num_blocks, block_size_parameter >> > (world, d_result, *this);
-
-		cudaMemcpy(h_result, d_result, num_pixels * sizeof(color_255), cudaMemcpyDeviceToHost);
-
-		cudaFree(d_result);
-
-		//P3 image format
-		output_file << "P3\n" << image_width << ' ' << image_height << "\n255\n";
-
-		for (int j = 0; j < image_height; j++) {
-			for (int i = 0; i < image_width; i++) {
-				int pixel = j * image_width + i;
-				output_file << h_result[pixel].x() << ' ' << h_result[pixel].y() << ' ' << h_result[pixel].z() << '\n';
-			}
-		}
-				
-		std::clog << "\rDone.                                 \n";
-
-		output_file.close();
-		free(h_result);
-	}
-
 	//get initialized below
 	int image_width;
 	point3 camera_center;
@@ -84,7 +40,6 @@ public:
 	vec3 pixel_delta_v;
 	vec3 u, v, w; //camera vectors
 
-private:
 	void initialize(){
 		//calculate width based on aspect ratio and height, for user convenience
 		image_width = static_cast<int>(aspect_ratio * image_height);
@@ -141,7 +96,9 @@ __global__ void render_kernel(const hittable& world, color_255* d_result, camera
 		ray r = get_ray(i, j, cam);
 		pixel_color += ray_color(r, cam.max_bounces, world);
 	}
-	d_result[pixel] = color_255(pixel_color, cam.samples_per_pixel);
+
+	color_255 color_result = color_255(pixel_color, cam.samples_per_pixel);
+	d_result[pixel] = color_result;
 }
 
 __device__ color ray_color(const ray& r, int depth, const hittable& world) {

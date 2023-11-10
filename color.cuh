@@ -14,7 +14,7 @@ using color = vec3;
 //(the colors are a double from 0-1 so sqrt actually increases it)
 __device__ inline double linear_to_gamma(double l){ return sqrt(l); }
 
-__device__ void write_color(std::ostream &out, color pixel_color, int samples_per_pixel) {
+/*__device__ void write_color(std::ostream& out, color pixel_color, int samples_per_pixel) {
 	
 	double r = pixel_color.x();
 	double g = pixel_color.y();
@@ -34,6 +34,6 @@ __device__ void write_color(std::ostream &out, color pixel_color, int samples_pe
 	out << static_cast<int>(256 * intensity.clamp(r)) << ' '
         << static_cast<int>(256 * intensity.clamp(g)) << ' '
 	    << static_cast<int>(256 * intensity.clamp(b)) << '\n';
-}
+}*/
 
 #endif

@@ -28,10 +28,15 @@ public:
 		g = sqrt(g);
 		b = sqrt(b);
 
-		static const interval intensity(0.000, 0.999);
-		e[0] = static_cast<char>(256 * intensity.clamp(r));
-		e[1] = static_cast<char>(256 * intensity.clamp(g));
-		e[2] = static_cast<char>(256 * intensity.clamp(b));
+		float max_intensity = 0.999;
+
+		r = (r > max_intensity) ? max_intensity : r;
+		g = (g > max_intensity) ? max_intensity : g;
+		b = (b > max_intensity) ? max_intensity : b;
+
+		e[0] = static_cast<char>(256 * r);
+		e[1] = static_cast<char>(256 * g);
+		e[2] = static_cast<char>(256 * b);
 	}
 
 	__host__ __device__ char x() const { return e[0]; }

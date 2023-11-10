@@ -24,7 +24,7 @@ public:
 
 class hittable{
 public:
-	__device__ virtual ~hittable() = default;
+	virtual ~hittable() = default;
 	
 	//Returns whether the hittable object/surface/whatever was hit within the min/max range, and modifies the provided hit_record with the hit information
 	__device__ virtual bool hit(const ray& r, interval ray_t, hit_record& rec) const = 0;
