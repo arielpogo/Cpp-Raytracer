@@ -8,9 +8,8 @@ public:
 	hittable** objects;
 	int n_objects;
 
-	__device__ __host__ hittable_list(){}
-	__device__ __host__ hittable_list(hittable** list, int n) : objects(list), n_objects(n) {};
-	__device__ __host__ ~hittable_list() {
+	__device__ hittable_list(hittable** list, int n) : objects(list), n_objects(n) {};
+	__device__ ~hittable_list() {
 		for (int i = 0; i < n_objects; i++) delete objects[i];
 	}
 

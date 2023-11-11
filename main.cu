@@ -6,7 +6,7 @@
 #include "material.cuh"
 #include "sphere.cuh"
 
-__global__ void init_kernel(hittable** d_list, int NUM_OBJECTS, hittable* d_world, material** d_materials, int NUM_MATERIALS, camera* d_cam, int height_parameter, int ratio_parameter) {
+__global__ void init_kernel(hittable** d_list, int NUM_OBJECTS, hittable_list* d_world, material** d_materials, int NUM_MATERIALS, camera* d_cam, int height_parameter, int ratio_parameter) {
 	if (threadIdx.x != 0 || blockIdx.x != 0) return;
 
 	auto material_ground = new lambertian(color(0.5, 0.5, 0.5));
@@ -35,15 +35,16 @@ __global__ void init_kernel(hittable** d_list, int NUM_OBJECTS, hittable* d_worl
 	d_cam->lookat = point3(0, 0, 0);
 }
 
-__global__ void free_kernel(hittable* d_world, material** d_materials, int NUM_MATERIALS, camera* d_cam) {
+//deletes (destructs) the objects, but is freed on host
+__global__ void delete_kernel(hittable_list* d_world, material**d_materials, int NUM_MATERIALS, camera* d_cam) {
 	if (threadIdx.x != 0 || blockIdx.x != 0) return;
+
+	delete d_world; //calls destructor, which deletes all of the hittables within it
 	for (int i = 0; i < NUM_MATERIALS; i++) delete d_materials[i];
-	delete d_materials;
-	delete d_world;
 	delete d_cam;
 }
 
-__host__ int render(hittable* d_world, material** d_materials, camera* d_cam, std::string filename, int block_size_parameter) {
+__host__ int render(hittable_list* d_world, camera* d_cam, std::string filename, int block_size_parameter) {
 	d_cam->initialize();
 
 	const int num_pixels = d_cam->image_height * d_cam->image_width;
@@ -56,7 +57,7 @@ __host__ int render(hittable* d_world, material** d_materials, camera* d_cam, st
 		return 1;
 	}
 
-	color_255 h_result[] = color_255[num_pixels];
+	color_255* h_result = (color_255*) malloc(num_pixels * sizeof(color_255));
 
 	if (h_result == NULL) {
 		std::cerr << "Fatal error: " << num_pixels * sizeof(color_255) << " bytes of memory could not be allocated in host memory (RAM)." << std::endl;
@@ -72,18 +73,18 @@ __host__ int render(hittable* d_world, material** d_materials, camera* d_cam, st
 	int num_blocks = (int)std::ceil(num_pixels / (double)block_size_parameter);
 	//int shm_size = 1024 * 48; //48KB
 
-	render_kernel << <num_blocks, block_size_parameter >> > (world, d_result, *this);
+	render_kernel<<<num_blocks, block_size_parameter>>>(d_world, d_result, d_cam);
 
 	cudaMemcpy(h_result, d_result, num_pixels * sizeof(color_255), cudaMemcpyDeviceToHost);
 
 	cudaFree(d_result);
 
 	//P3 image format
-	output_file << "P3\n" << image_width << ' ' << image_height << "\n255\n";
+	output_file << "P3\n" << d_cam->image_width << ' ' << d_cam->image_height << "\n255\n";
 
-	for (int j = 0; j < image_height; j++) {
-		for (int i = 0; i < image_width; i++) {
-			int pixel = j * image_width + i;
+	for (int j = 0; j < d_cam->image_height; j++) {
+		for (int i = 0; i < d_cam->image_width; i++) {
+			int pixel = j * d_cam->image_width + i;
 			output_file << h_result[pixel].x() << ' ' << h_result[pixel].y() << ' ' << h_result[pixel].z() << '\n';
 		}
 	}
@@ -92,6 +93,8 @@ __host__ int render(hittable* d_world, material** d_materials, camera* d_cam, st
 
 	output_file.close();
 	free(h_result);
+
+	return 0;
 }
 
 int main(int argc, char* argv[]){
@@ -159,10 +162,10 @@ int main(int argc, char* argv[]){
 		}
 	}
 
-	hittable** d_list = nullptr;
+	hittable** d_list = nullptr; //temp. list used to then be put into the hittable list
 	cudaMalloc((void**)&d_list, NUM_OBJECTS * sizeof(hittable*));
 
-	hittable* d_world;
+	hittable_list* d_world;
 	cudaMalloc((void**)&d_world, sizeof(hittable_list));
 
 	material** d_materials = nullptr;
@@ -176,12 +179,15 @@ int main(int argc, char* argv[]){
 
 	TIMING_START();
 
-	int render_result = render(d_world, d_materials, d_cam, filename, block_size_parameter);
+	int render_result = render(d_world, d_cam, filename, block_size_parameter);
 
 	TIMING_STOP();
 	TIMING_PRINT();
 
-	free_kernel <<<1, 1 >>> (d_world, d_materials, NUM_MATERIALS, d_cam);
-
+	//Delete the objects, then free their memory
+	delete_kernel<<<1,1>>>(d_world, d_materials, NUM_MATERIALS, d_cam);
+	cudaFree(d_world);
+	cudaFree(d_materials);
+	cudaFree(d_cam);
 	return render_result;
 }

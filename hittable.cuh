@@ -10,7 +10,7 @@ class hit_record{
 public:
 	point3 p;
 	vec3 normal;
-	shared_ptr<material> mat;	
+	material* mat;	
 	double t;
 	bool front_face;
 	
@@ -24,7 +24,7 @@ public:
 
 class hittable{
 public:
-	virtual ~hittable() = default;
+	__device__ virtual ~hittable() {};
 	
 	//Returns whether the hittable object/surface/whatever was hit within the min/max range, and modifies the provided hit_record with the hit information
 	__device__ virtual bool hit(const ray& r, interval ray_t, hit_record& rec) const = 0;

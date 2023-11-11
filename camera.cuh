@@ -13,10 +13,10 @@
 
 class camera;
 
-__global__ void render_kernel(const hittable& world, color_255* d_result, camera& cam);
-__device__ color ray_color(const ray& r, int depth, const hittable& world);
-__device__ ray get_ray(int i, int j, camera& cam);
-__device__ vec3 pixel_sample_square(camera& cam);
+__global__ void render_kernel(hittable_list* d_world, color_255* d_result, camera* d_cam);
+__device__ color ray_color(const ray& r, int depth, hittable_list* d_world);
+__device__ ray get_ray(int i, int j, camera* cam);
+__device__ vec3 pixel_sample_square(camera* cam);
 
 class camera{
 public:
@@ -85,31 +85,31 @@ public:
 	}
 };
 
-__global__ void render_kernel(const hittable& world, color_255* d_result, camera& cam) {
+__global__ void render_kernel(hittable_list* d_world, color_255* d_result, camera* d_cam) {
 	//extern __shared__ color_255 sh_result;
 	int pixel = threadIdx.x + (blockDim.x * blockIdx.x);
-	int i = pixel % cam.image_width;
-	int j = pixel / cam.image_width;
+	int i = pixel % d_cam->image_width;
+	int j = pixel / d_cam->image_width;
 
 	color pixel_color(0, 0, 0);
-	for (int sample = 0; sample < cam.samples_per_pixel; sample++) {
-		ray r = get_ray(i, j, cam);
-		pixel_color += ray_color(r, cam.max_bounces, world);
+	for (int sample = 0; sample < d_cam->samples_per_pixel; sample++) {
+		ray r = get_ray(i, j, d_cam);
+		pixel_color += ray_color(r, d_cam->max_bounces, d_world);
 	}
 
-	color_255 color_result = color_255(pixel_color, cam.samples_per_pixel);
+	color_255 color_result = color_255(pixel_color, d_cam->samples_per_pixel);
 	d_result[pixel] = color_result;
 }
 
-__device__ color ray_color(const ray& r, int depth, const hittable& world) {
+__device__ color ray_color(const ray& r, int depth, hittable_list* d_world) {
 	if (depth <= 0) return color(0, 0, 0); //limit recursion depth with max bounces  
 
 	hit_record rec;
-	if (world.hit(r, interval(0.001, infinity), rec)) { //if anything in the world is hit (ignoring floating point imprecision)
+	if (d_world->hit(r, interval(0.001, infinity), rec)) { //if anything in the world is hit (ignoring floating point imprecision)
 		ray scattered;
 		color attenuation;
 
-		if (rec.mat->scatter(r, rec, attenuation, scattered)) return attenuation * ray_color(scattered, depth - 1, world);
+		if (rec.mat->scatter(r, rec, attenuation, scattered)) return attenuation * ray_color(scattered, depth - 1, d_world);
 		else return color(0, 0, 0);
 	}
 
@@ -119,18 +119,18 @@ __device__ color ray_color(const ray& r, int depth, const hittable& world) {
 	return color(1, 1, 1);
 }
 
-__device__ ray get_ray(int i, int j, camera& cam) {
+__device__ ray get_ray(int i, int j, camera* d_cam) {
 	//get a randomly sampled camera ray for the given pixel
-	vec3 pixel_center = cam.pixel00_loc + (i * cam.pixel_delta_u) + (j * cam.pixel_delta_v);
-	vec3 pixel_sample = pixel_center + pixel_sample_square(cam);
+	vec3 pixel_center = d_cam->pixel00_loc + (i * d_cam->pixel_delta_u) + (j * d_cam->pixel_delta_v);
+	vec3 pixel_sample = pixel_center + pixel_sample_square(d_cam);
 
-	return ray(cam.camera_center, pixel_sample - cam.camera_center);
+	return ray(d_cam->camera_center, pixel_sample - d_cam->camera_center);
 }
 
-__device__ vec3 pixel_sample_square(camera& cam) {
+__device__ vec3 pixel_sample_square(camera* d_cam) {
 	auto x = -0.5 + random_double();
 	auto y = -0.5 + random_double();
-	return (x * cam.pixel_delta_u) + (y * cam.pixel_delta_v);
+	return (x * d_cam->pixel_delta_u) + (y * d_cam->pixel_delta_v);
 }
 
 #endif
